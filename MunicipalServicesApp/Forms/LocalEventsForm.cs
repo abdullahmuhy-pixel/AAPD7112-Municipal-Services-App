@@ -21,8 +21,8 @@ namespace MunicipalServicesApp.Forms
         private readonly RecommendationEngine _recommender = new RecommendationEngine();
 
         private ComboBox cboCategory;
-        private DateTimePicker dtpDate;
-        private CheckBox chkUseDate;
+        private ComboBox cboDate;
+        private System.Collections.Generic.List<DateTime> _availableDates = new System.Collections.Generic.List<DateTime>();
         private Button btnSearch;
         private Button btnClear;
 
@@ -90,10 +90,9 @@ namespace MunicipalServicesApp.Forms
             cboCategory = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 190, Margin = new Padding(0, 4, 16, 4) };
             searchPanel.Controls.Add(cboCategory);
 
-            chkUseDate = new CheckBox { Text = "Date:", AutoSize = true, Margin = new Padding(0, 8, 4, 0) };
-            searchPanel.Controls.Add(chkUseDate);
-            dtpDate = new DateTimePicker { Format = DateTimePickerFormat.Short, Width = 110, Margin = new Padding(0, 4, 16, 4) };
-            searchPanel.Controls.Add(dtpDate);
+            searchPanel.Controls.Add(new Label { Text = "Date:", AutoSize = true, Margin = new Padding(0, 8, 4, 0) });
+            cboDate = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 150, Margin = new Padding(0, 4, 16, 4) };
+            searchPanel.Controls.Add(cboDate);
 
             btnSearch = new Button
             {
@@ -205,7 +204,15 @@ namespace MunicipalServicesApp.Forms
                 cboCategory.Items.Add(cat);
             cboCategory.SelectedIndex = 0;
 
-            dtpDate.Value = DateTime.Now;
+            // The Date dropdown only ever offers dates that actually have an
+            // event on them (built from the HashSet<DateTime> of unique
+            // dates in EventRepository), so picking a date always narrows
+            // the results instead of silently doing nothing.
+            _availableDates = EventRepository.Dates.OrderBy(d => d).ToList();
+            cboDate.Items.Add("(All Dates)");
+            foreach (var date in _availableDates)
+                cboDate.Items.Add(date.ToString("dd MMM yyyy"));
+            cboDate.SelectedIndex = 0;
         }
 
         private ListView MakeListView()
@@ -263,7 +270,7 @@ namespace MunicipalServicesApp.Forms
         private void BtnSearch_Click(object sender, EventArgs e)
         {
             string category = cboCategory.SelectedIndex > 0 ? cboCategory.SelectedItem.ToString() : null;
-            DateTime? date = chkUseDate.Checked ? (DateTime?)dtpDate.Value : null;
+            DateTime? date = cboDate.SelectedIndex > 0 ? (DateTime?)_availableDates[cboDate.SelectedIndex - 1] : null;
 
             var results = EventRepository.Search(category, date);
             PopulateListView(lvAllEvents, results);
@@ -280,8 +287,7 @@ namespace MunicipalServicesApp.Forms
         private void BtnClear_Click(object sender, EventArgs e)
         {
             cboCategory.SelectedIndex = 0;
-            chkUseDate.Checked = false;
-            dtpDate.Value = DateTime.Now;
+            cboDate.SelectedIndex = 0;
             PopulateListView(lvAllEvents, EventRepository.AllEventsChronological());
             lblResultsCount.Text = $"Showing all {EventRepository.AllEventsChronological().Count} upcoming events.";
         }
