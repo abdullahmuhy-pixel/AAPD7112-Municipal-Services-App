@@ -88,8 +88,8 @@ namespace MunicipalServicesApp.Models
             return _featuredQueue.ToOrderedList().Take(take).ToList();
         }
 
-        /// <summary>Search by category and/or date. Either filter may be null/empty to be ignored.</summary>
-        public static List<MunicipalEvent> Search(string category, DateTime? date)
+        /// <summary>Search by typed keyword, category and/or date. Any filter may be null/empty to be ignored.</summary>
+        public static List<MunicipalEvent> Search(string category, DateTime? date, string keyword = null)
         {
             IEnumerable<MunicipalEvent> results = AllEventsChronological();
 
@@ -104,6 +104,18 @@ namespace MunicipalServicesApp.Models
             {
                 var dateOnly = date.Value.Date;
                 results = results.Where(e => e.EventDate.Date == dateOnly);
+            }
+
+            // Typed keyword search: every word the user typed must appear somewhere in the
+            // title, category, location or description (ignoring upper and lower case).
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                string[] words = keyword.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                results = results.Where(ev => words.All(word =>
+                    ev.Title.IndexOf(word, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    ev.Category.IndexOf(word, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    ev.Location.IndexOf(word, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    ev.Description.IndexOf(word, StringComparison.OrdinalIgnoreCase) >= 0));
             }
 
             return results.OrderBy(e => e.EventDate).ToList();

@@ -8,7 +8,7 @@ namespace MunicipalServicesApp.Forms
     /// Application landing page. Presents the three top-level tasks
     /// required by the brief: Report Issues (implemented in Part 1),
     /// Local Events and Announcements (implemented in Part 2), and
-    /// Service Request Status (disabled, to be implemented in the PoE).
+    /// Service Request Status (implemented in the PoE, Part 3).
     /// </summary>
     public class MainMenuForm : Form
     {
@@ -73,10 +73,11 @@ namespace MunicipalServicesApp.Forms
 
             btnReportIssues = MakeMenuButton("Report Issues", true);
             btnLocalEvents = MakeMenuButton("Local Events and Announcements", true);
-            btnServiceStatus = MakeMenuButton("Service Request Status", false);
+            btnServiceStatus = MakeMenuButton("Service Request Status", true);
 
             btnReportIssues.Click += BtnReportIssues_Click;
             btnLocalEvents.Click += BtnLocalEvents_Click;
+            btnServiceStatus.Click += BtnServiceStatus_Click;
 
             buttonPanel.Controls.Add(btnReportIssues, 0, 0);
             buttonPanel.Controls.Add(btnLocalEvents, 0, 1);
@@ -122,6 +123,14 @@ namespace MunicipalServicesApp.Forms
         private void BtnLocalEvents_Click(object sender, EventArgs e)
         {
             using (var form = new LocalEventsForm())
+            {
+                form.ShowDialog(this);
+            }
+        }
+
+        private void BtnServiceStatus_Click(object sender, EventArgs e)
+        {
+            using (var form = new ServiceRequestStatusForm())
             {
                 form.ShowDialog(this);
             }

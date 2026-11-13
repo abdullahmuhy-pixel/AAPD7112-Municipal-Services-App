@@ -1,75 +1,114 @@
-# Municipal Services Application - Part 2 (Local Events and Announcements)
+# Municipal Services Application - PoE Part 3 (Service Request Status)
 
 PROG7312 / AAPD7112: Programming 3B: Advanced Application Development
 C# .NET Framework (net472) Windows Forms application.
 
-This builds on Part 1. The Report Issues feature from Part 1 is unchanged.
-Part 2 adds the Local Events and Announcements feature.
+This builds on Part 1 (Report Issues) and Part 2 (Local Events and Announcements).
+Part 3 adds the Service Request Status feature, so all three Main Menu options now work.
 
 ## How to Compile and Run
 
-Same requirements and steps as Part 1 (Visual Studio 2022, .NET desktop
-development workload, .NET Framework 4.7.2 targeting pack).
+Requirements: Windows 10/11, Visual Studio 2022 with the .NET desktop development
+workload, and the .NET Framework 4.7.2 targeting pack.
 
 1. Open `MunicipalServicesApp.sln` in Visual Studio.
-2. Press F5, or Build then Debug without Debugging.
-3. The Main Menu now has two enabled buttons: Report Issues and Local
-   Events and Announcements. Service Request Status is still disabled
-   (it gets built in the final PoE part).
+2. If Visual Studio complains about a missing project.assets.json file, right click the
+   solution and choose Restore NuGet Packages (no extra packages are needed, this just
+   sets up the project), then rebuild.
+3. Press F5, or Build then Debug, Start Without Debugging.
+4. The Main Menu opens with all three buttons enabled.
 
-## How to Use (Local Events and Announcements)
+## How to Use Service Request Status
 
-1. From the Main Menu, click **Local Events and Announcements**.
-2. The **All Events** tab lists every upcoming event, sorted by date.
-3. Use the **Category** dropdown and/or the **Date** picker (tick the
-   Date checkbox to enable it) and click **Search** to filter. Every
-   search is recorded and feeds the recommendation panel on the right.
-4. Double-click any event, in any tab or in the Recommended list, to see
-   its full details. This also marks it as viewed, moves it onto the
-   Recently Viewed tab, and removes it from future recommendations.
-5. Other tabs:
-   - **Featured and Urgent**: events ordered by how soon they happen,
-     with featured/urgent notices bumped ahead of ordinary events.
-   - **Recently Viewed**: the events you have opened, most recent first.
-   - **Latest Announcements**: every event in the order it was added to
-     the system.
-6. The **Recommended for You** panel on the right updates after every
-   search and every event you open, based on which category you search
-   for most.
-7. Click **Back to Main Menu** to return.
+Click **Service Request Status** on the Main Menu. Twelve sample requests are loaded
+(SR-1001 to SR-1012). Any issue you report through **Report Issues** is added too, using the
+reference number shown after you submit it, so you can track your own reports.
 
-## Where Each Required Data Structure Is Used
+- **All Requests**: every request in date order. Use the status dropdown to filter.
+  Double click a row to track it.
+- **Track a Request**: type a request ID (for example SR-1002) and press Track or Enter.
+  You see the details, a progress bar showing the stage (1 to 4), the status history, how
+  many comparisons the AVL tree needed compared with a plain binary search tree, and a list
+  of related requests. "Advance Status" simulates a staff update so you can watch the status
+  change.
+- **Urgent Queue**: requests waiting to be picked up, most urgent first. "Process Next
+  Request" takes the top one and marks it Assigned.
+- **Request Network**: pick a request, then run a Breadth First or Depth First search, or
+  build the Minimum Spanning Tree of all open requests.
+- **Category Tree**: the municipality, its categories, and the requests under each one.
+- **Structure Stats**: heights, rotations and sizes of every structure.
 
-- `Models/EventRepository.cs`:
-  - `SortedDictionary<DateTime, List<MunicipalEvent>>`: keeps events in
-    chronological order automatically. Used for the All Events tab and
-    as the base collection for searching.
-  - `Dictionary<string, List<MunicipalEvent>>`: a hash table of events
-    grouped by category, used for fast category search.
-  - `HashSet<string>` / `HashSet<DateTime>`: the unique categories and
-    dates currently in the system, used to populate the search filters
-    without duplicates.
-  - `Queue<MunicipalEvent>`: the Latest Announcements feed, in the order
-    events were added (first in, first shown).
-  - `Stack<MunicipalEvent>`: the Recently Viewed history, most recently
-    opened event first.
-- `Models/CustomPriorityQueue.cs`: a hand-written binary-heap priority
-  queue (net472 does not include .NET's built-in `PriorityQueue` type,
-  which only shipped in .NET 6), used to order the Featured and Urgent
-  tab by how soon each event happens.
-- `Models/RecommendationEngine.cs`: the recommendation feature. Tracks
-  every search in a `Dictionary<string, int>` of category search counts,
-  keeps a `Queue<string>` log of recent searches, and a `HashSet<Guid>`
-  of already-viewed events so recommendations never repeat something the
-  citizen has already opened.
+## What You Should See on a Fresh Start
 
-## Known Limitations (Part 2 scope)
+- Structure Stats: BST height 12, AVL height 4 (8 rotations), Red-Black height 5 with black
+  height 3 and rules satisfied, 12 graph vertices, 19 edges, 1 connected group.
+- Urgent Queue order: SR-1008, SR-1007, SR-1011, SR-1003, SR-1004.
+- Minimum Spanning Tree: 10 open requests, 9 links, 28.29 km in total.
 
-- Service Request Status remains disabled; it is built in the final PoE
-  part.
-- Event and search data is in memory only and resets each time the
-  application restarts, since no persistence requirement is specified.
-- Sample events are seeded on startup so the feature can be demonstrated
-  without first using Part 1 to create data; they are not linked to
-  issues reported in Part 1 (the two features are independent in this
-  part of the brief).
+## Data Structures and Their Role
+
+All custom structures are in the `Structures` folder and were written from scratch,
+because .NET Framework 4.7.2 has no built in AVL tree, red-black tree, heap or graph.
+
+**General tree (`GeneralTree.cs`)**: a node can have any number of children. It models the
+hierarchy Municipality, then Category, then Request, and feeds the Category Tree tab.
+Example: "Roads (3)" has three child nodes, one for each roads request.
+
+**Binary search tree (`BinarySearchTree.cs`)**: each node has a left child with a smaller
+key and a right child with a larger key. It is the baseline. Because the request IDs
+arrive in order (SR-1001, SR-1002, ...), it turns into a chain of height 12, so finding
+SR-1012 takes 12 comparisons. The Track tab shows this number next to the AVL result.
+
+**AVL tree (`AvlTree.cs`)**: a binary search tree that checks the balance factor of every
+node after an insert and fixes it with rotations. With the same 12 IDs its height is 4, so
+any request is found in at most 4 comparisons. It is the main index for tracking by ID.
+
+**Red-black tree (`RedBlackTree.cs`)**: nodes are coloured red or black following rules that
+keep the tree balanced (black root, no red node with a red child, equal black height on every
+path). It is keyed by date submitted, so an in-order walk gives requests oldest first, which is
+what the All Requests tab shows. It rebalances with fewer rotations than AVL, which suits data
+that keeps arriving. The Structure Stats tab runs a check of all three rules.
+
+**Min-heap (`BinaryHeap.cs`)**: a binary tree stored in a list where the smallest item is
+always at the top. Requests are ordered by priority number (1 is critical) and then by oldest
+date. Inserting and removing the top both take O(log n). It powers the Urgent Queue and the
+Process Next Request button. Requests that were already moved on by hand are skipped when they
+reach the top (lazy removal).
+
+**Graph (`RequestGraph.cs`)**: each request is a vertex and an edge links two requests that share
+a category or are within 4 km of each other, weighted by the distance. It is stored as an
+adjacency list.
+- Breadth first search (a queue) finds related requests level by level. The Track tab uses it
+  to list requests within 2 hops.
+- Depth first search (recursion) follows one chain of links as far as it goes before backing up.
+- Kruskal's minimum spanning tree sorts the edges by distance and adds each one unless it would
+  make a loop (checked with union-find). Over the open requests it gives the cheapest set of
+  links joining them all, which could be used to plan one crew route.
+
+## How Part 1 Connects to Part 3
+
+When an issue is submitted in Report Issues, `ServiceRequestRepository.AddFromIssue` creates a
+matching service request with the same reference number. Free text locations cannot be turned
+into real map positions without a mapping service, so a repeatable position on a grid is worked
+out from the location text. The same text always gives the same position.
+
+## Changes Made From Lecturer Feedback (Part 2)
+
+Part 2 feedback: the category search did not let the user type into a text field, and the
+interface should be more user friendly. In Local Events and Announcements:
+
+- There is now a search box where the user can type any word. It matches the title, category,
+  location and description, and several words must all match. It shows grey hint text, and
+  pressing Enter runs the search.
+- The search bar now spans the whole window, so the Search and Clear buttons are no longer cut off.
+- The typed search, category dropdown and date dropdown can be used alone or together.
+- The results line explains what was searched, and shows a clear message when nothing is found.
+- Recommended events are drawn as small cards (title, then category and date) so text is no longer
+  cut off, and typed searches also feed the recommendations.
+- Tooltips explain each search control.
+
+## Known Limitations
+
+- Data is held in memory only and resets when the application closes.
+- The red-black tree supports insert and search only, because requests are never deleted.
+- "Advance Status" simulates a municipal staff update, since the application has no staff side.

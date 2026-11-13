@@ -309,9 +309,13 @@ namespace MunicipalServicesApp.Forms
 
             IssueRepository.Add(issue);
 
+            // Part 3: every submitted issue also becomes a service request that
+            // can be tracked under Service Request Status with the same reference number.
+            ServiceRequestRepository.AddFromIssue(issue);
+
             MessageBox.Show(this,
                 $"Thank you! Your issue has been reported.\n\nReference number: {issue.ReferenceNumber}\n" +
-                $"Total issues reported this session: {IssueRepository.Count}",
+                $"Total issues reported this session: {IssueRepository.Count}\n\nYou can track this report under Service Request Status using the reference number above.",
                 "Issue submitted",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
